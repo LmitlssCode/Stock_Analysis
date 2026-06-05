@@ -4,14 +4,21 @@ Run locally with::
 
     uvicorn app.main:app --reload --port 8000
 
-Then GET http://localhost:8000/analyze/AAPL
+Then open the dashboard at http://localhost:8000/
+or hit the API directly: GET http://localhost:8000/analyze/AAPL
 """
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.api.routes import router
+
+STATIC_DIR = Path(__file__).parent / "static"
 
 app = FastAPI(
     title="Stock Analysis API",
@@ -24,11 +31,12 @@ app = FastAPI(
 
 app.include_router(router)
 
+# Serve the dashboard's static assets (CSS/JS) under /static.
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
-@app.get("/")
-def root() -> dict[str, str]:
-    return {
-        "service": "Stock Analysis API",
-        "docs": "/docs",
-        "example": "/analyze/AAPL",
-    }
+
+@app.get("/", include_in_schema=False)
+def dashboard() -> FileResponse:
+    """Serve the single-page dashboard."""
+
+    return FileResponse(STATIC_DIR / "index.html")
