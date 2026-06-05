@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Stock Analysis Dashboard</title>
   <link rel="stylesheet" href="/static/styles.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>📈</text></svg>" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
   <header class="topbar">
@@ -12,7 +14,7 @@
       <span class="logo">📈</span>
       <div>
         <h1>Stock Analysis</h1>
-        <p class="tagline">Fundamentals health · price projection · investment opinion</p>
+        <p class="tagline">Fundamentals health · price projection · analyst consensus · financials</p>
       </div>
     </div>
     <form id="search" class="search">
@@ -55,7 +57,7 @@
       <div class="grid">
         <!-- Health -->
         <div class="card span-2">
-          <h3>Financial Health</h3>
+          <h3>Financial Health <span class="hint-inline">— click a metric for the “why”</span></h3>
           <div class="health">
             <div class="gauge">
               <div id="health-ring" class="ring">
@@ -68,31 +70,32 @@
           </div>
         </div>
 
+        <!-- Price history + projection -->
+        <div class="card span-2">
+          <div class="card-head">
+            <h3>Price &amp; Projection</h3>
+            <div id="horizons" class="horizons"></div>
+          </div>
+          <div class="chart-wrap"><canvas id="price-chart"></canvas></div>
+          <div class="predict">
+            <div><span class="muted">Target (<span id="horizon-label">1Y</span>)</span><span id="predicted-price" class="predict-value">—</span></div>
+            <div><span class="muted">Expected return</span><span id="expected-return" class="predict-value">—</span></div>
+            <div><span class="muted">Confidence</span><span id="confidence" class="predict-value">—</span></div>
+          </div>
+          <p id="predict-rationale" class="muted small"></p>
+        </div>
+
         <!-- Recommendation -->
         <div class="card">
-          <h3>Recommendation</h3>
+          <h3>Our Recommendation</h3>
           <div id="recommendation" class="rec">—</div>
           <p id="advice-summary" class="muted"></p>
         </div>
 
-        <!-- Prediction -->
+        <!-- Analyst consensus -->
         <div class="card">
-          <h3>12-Month Projection</h3>
-          <div class="predict">
-            <div>
-              <span class="muted">Target</span>
-              <span id="predicted-price" class="predict-value">—</span>
-            </div>
-            <div>
-              <span class="muted">Expected return</span>
-              <span id="expected-return" class="predict-value">—</span>
-            </div>
-            <div>
-              <span class="muted">Confidence</span>
-              <span id="confidence" class="predict-value">—</span>
-            </div>
-          </div>
-          <p id="predict-rationale" class="muted small"></p>
+          <h3>Analyst Consensus</h3>
+          <div id="analyst" class="analyst"></div>
         </div>
 
         <!-- Strengths / Risks -->
@@ -103,6 +106,16 @@
         <div class="card">
           <h3>Risks</h3>
           <ul id="risks" class="bullets bad"></ul>
+        </div>
+
+        <!-- Financial statements -->
+        <div class="card span-2">
+          <div class="card-head">
+            <h3>Financial Statements</h3>
+            <div id="stmt-tabs" class="tabs"></div>
+          </div>
+          <div id="stmt-table" class="table-wrap"></div>
+          <p class="muted small">Figures in millions unless noted. YoY = latest year vs. prior · Avg = mean across shown years.</p>
         </div>
       </div>
 

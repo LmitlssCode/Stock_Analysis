@@ -1,5 +1,17 @@
 """Analysis brain: predictions and investment advice."""
 
-from app.brain.analyzer import generate_advice, predict_price
+from app.brain.analyzer import (
+    DEFAULT_HORIZON_MONTHS,
+    HORIZONS,
+    generate_advice,
+    predict_all_horizons,
+    predict_price,
+)
 
-__all__ = ["generate_advice", "predict_price"]
+__all__ = [
+    "DEFAULT_HORIZON_MONTHS",
+    "HORIZONS",
+    "generate_advice",
+    "predict_all_horizons",
+    "predict_price",
+]

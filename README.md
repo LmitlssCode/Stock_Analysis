@@ -19,8 +19,14 @@ internet access is required since data is fetched live from Yahoo Finance.
 The dashboard shows, for any ticker:
 
 - the current price and company info,
-- a **financial health** gauge plus a per-metric breakdown,
-- a **12-month price projection** with expected return and confidence,
+- a **financial health** gauge plus a per-metric breakdown — click a metric to
+  see *why* it's strong or weak,
+- a **5-year price chart** with a horizon selector (3M / 6M / 1Y / 3Y / 5Y) and
+  the model's projected target overlaid,
+- **analyst consensus** — rating distribution, consensus score, and the
+  low/mean/high 12-month price-target range,
+- the **financial statements** (income, balance sheet, cash flow) report-to-report
+  with year-over-year change and multi-year averages,
 - an **investment recommendation** with the top strengths and risks.
 
 ## How the analysis runs

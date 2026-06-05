@@ -2,9 +2,14 @@
 
 from app.schemas.models import (
     AnalysisResponse,
+    AnalystOpinions,
+    AnalystRatingPeriod,
+    FinancialLineItem,
     FinancialMetrics,
+    FinancialStatement,
     InvestmentAdvice,
     MetricRating,
+    PricePoint,
     PricePrediction,
     RawFinancials,
     Recommendation,
@@ -13,9 +18,14 @@ from app.schemas.models import (
 
 __all__ = [
     "AnalysisResponse",
+    "AnalystOpinions",
+    "AnalystRatingPeriod",
+    "FinancialLineItem",
     "FinancialMetrics",
+    "FinancialStatement",
     "InvestmentAdvice",
     "MetricRating",
+    "PricePoint",
     "PricePrediction",
     "RawFinancials",
     "Recommendation",

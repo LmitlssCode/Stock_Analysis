@@ -4,6 +4,10 @@ The scoring philosophy here is deliberately simple and transparent: each
 metric is mapped onto a 0-100 score via piecewise-linear thresholds, then the
 scores are blended with fixed weights into an overall health score. This is
 not a trading model — it is an explainable summary of fundamental health.
+
+Every metric carries both a short ``commentary`` (one line) and a longer
+``explanation`` describing *why* the score landed where it did and what would
+make the metric strong vs. weak.
 """
 
 from __future__ import annotations
@@ -54,6 +58,7 @@ def _scored(
     value: Optional[float],
     score: Optional[float],
     commentary: str,
+    explanation: str = "",
 ) -> ScoredMetric:
     # A missing input is treated as a neutral 50 so it neither helps nor
     # punishes the company, but the commentary makes the gap explicit.
@@ -64,6 +69,11 @@ def _scored(
             score=50.0,
             rating=MetricRating.NEUTRAL,
             commentary=f"{name}: data unavailable.",
+            explanation=(
+                f"The data provider did not return a value for {name}, so it is "
+                "scored as neutral (50) and neither helps nor hurts the overall "
+                "health score."
+            ),
         )
     score = max(0.0, min(100.0, score))
     return ScoredMetric(
@@ -72,6 +82,7 @@ def _scored(
         score=score,
         rating=_rating_from_score(score),
         commentary=commentary,
+        explanation=explanation,
     )
 
 
@@ -105,6 +116,14 @@ def compute_metrics(raw) -> FinancialMetrics:
             pm,
             None if pm is None else _interpolate(pm, [(-0.1, 0), (0, 30), (0.1, 60), (0.2, 85), (0.35, 100)]),
             None if pm is None else f"Net margin of {pm:.1%}.",
+            None
+            if pm is None
+            else (
+                f"Net profit margin is the share of revenue left as profit after all "
+                f"costs. This company keeps {pm:.1%} of every sales dollar. "
+                "Above ~20% is considered strong (pricing power, efficiency); "
+                "0-10% is thin; below 0% means it is losing money."
+            ),
         )
     )
 
@@ -115,6 +134,13 @@ def compute_metrics(raw) -> FinancialMetrics:
             roe,
             None if roe is None else _interpolate(roe, [(-0.05, 0), (0.05, 40), (0.15, 70), (0.25, 90), (0.4, 100)]),
             None if roe is None else f"ROE of {roe:.1%}.",
+            None
+            if roe is None
+            else (
+                f"Return on equity measures how much profit the company generates per "
+                f"dollar of shareholder equity — here {roe:.1%}. Above ~20% is strong; "
+                "5-15% is average; negative means it is destroying shareholder capital."
+            ),
         )
     )
 
@@ -126,6 +152,13 @@ def compute_metrics(raw) -> FinancialMetrics:
             rg,
             None if rg is None else _interpolate(rg, [(-0.1, 0), (0, 40), (0.1, 70), (0.25, 90), (0.5, 100)]),
             None if rg is None else f"Revenue growth of {rg:.1%} YoY.",
+            None
+            if rg is None
+            else (
+                f"Year-over-year revenue growth of {rg:.1%}. Above ~15% signals a "
+                "fast-expanding business; 0-10% is mature/steady; negative means the "
+                "top line is shrinking."
+            ),
         )
     )
 
@@ -136,6 +169,13 @@ def compute_metrics(raw) -> FinancialMetrics:
             eg,
             None if eg is None else _interpolate(eg, [(-0.2, 0), (0, 40), (0.15, 70), (0.3, 90), (0.6, 100)]),
             None if eg is None else f"Earnings growth of {eg:.1%} YoY.",
+            None
+            if eg is None
+            else (
+                f"Year-over-year earnings growth of {eg:.1%}. Profits growing faster "
+                "than ~15% is strong; flat-to-modest is neutral; falling earnings are "
+                "a warning sign even when revenue holds up."
+            ),
         )
     )
 
@@ -147,6 +187,14 @@ def compute_metrics(raw) -> FinancialMetrics:
             cr,
             None if cr is None else _interpolate(cr, [(0.5, 0), (1.0, 45), (1.5, 75), (2.0, 95), (3.0, 100)]),
             None if cr is None else f"Current ratio of {cr:.2f}.",
+            None
+            if cr is None
+            else (
+                f"Current ratio = current assets / current liabilities = {cr:.2f}. "
+                "Above ~1.5 means the company can comfortably cover near-term bills; "
+                "below 1.0 means short-term obligations exceed liquid assets, a "
+                "liquidity risk."
+            ),
         )
     )
 
@@ -159,6 +207,13 @@ def compute_metrics(raw) -> FinancialMetrics:
             de_ratio,
             None if de_ratio is None else _score_lower_better(de_ratio, [(0.0, 100), (0.5, 85), (1.0, 65), (2.0, 35), (4.0, 0)]),
             None if de_ratio is None else f"Debt-to-equity of {de_ratio:.2f}x.",
+            None
+            if de_ratio is None
+            else (
+                f"Debt-to-equity of {de_ratio:.2f}x compares borrowings to shareholder "
+                "equity (lower is safer). Under ~0.5x is conservative; around 1x is "
+                "moderate; above ~2x is heavily leveraged and riskier if earnings dip."
+            ),
         )
     )
 
@@ -171,6 +226,20 @@ def compute_metrics(raw) -> FinancialMetrics:
             None
             if fcf is None
             else ("Generates positive free cash flow." if fcf > 0 else "Burning cash (negative FCF)."),
+            None
+            if fcf is None
+            else (
+                "Free cash flow is the cash left after operating costs and capital "
+                "spending — the cash truly available to repay debt, buy back stock, or "
+                "pay dividends. "
+                + (
+                    "This company generates positive free cash flow, a sign of "
+                    "self-funding strength."
+                    if fcf > 0
+                    else "This company is burning cash (negative free cash flow), so it "
+                    "may need outside financing to sustain itself."
+                )
+            ),
         )
     )
 
@@ -178,7 +247,17 @@ def compute_metrics(raw) -> FinancialMetrics:
     pe = raw.trailing_pe if raw.trailing_pe is not None else raw.forward_pe
     if pe is not None and pe <= 0:
         # Negative P/E means no earnings; valuation is not meaningful.
-        metrics.append(_scored("Valuation (P/E)", pe, 30.0, "No positive earnings (negative P/E)."))
+        metrics.append(
+            _scored(
+                "Valuation (P/E)",
+                pe,
+                30.0,
+                "No positive earnings (negative P/E).",
+                "A negative price-to-earnings ratio means the company has no positive "
+                "earnings to value against, so the shares cannot be assessed on "
+                "conventional earnings multiples — treated as a weak valuation signal.",
+            )
+        )
     else:
         metrics.append(
             _scored(
@@ -186,6 +265,15 @@ def compute_metrics(raw) -> FinancialMetrics:
                 pe,
                 None if pe is None else _score_lower_better(pe, [(8, 100), (15, 80), (25, 55), (40, 30), (70, 5)]),
                 None if pe is None else f"Trades at a P/E of {pe:.1f}.",
+                None
+                if pe is None
+                else (
+                    f"Price-to-earnings of {pe:.1f} is what investors pay per dollar of "
+                    "annual earnings (lower is cheaper). Under ~15x is inexpensive; "
+                    "15-25x is typical; above ~40x prices in heavy growth expectations "
+                    "and leaves little margin for disappointment. A low multiple lifts "
+                    "this score but can also signal the market's doubts."
+                ),
             )
         )
 
